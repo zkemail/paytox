@@ -1,0 +1,146 @@
+.home-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 60px 20px;
+	animation: slideIn 0.5s ease-out;
+}
+
+.home-hero {
+	text-align: center;
+	margin-bottom: 60px;
+}
+
+.home-logo {
+	height: 80px;
+	width: auto;
+	margin-bottom: 30px;
+}
+
+.home-title {
+	font-size: 3rem;
+	font-weight: 700;
+	margin-bottom: 20px;
+	line-height: 1.2;
+}
+
+.home-subtitle {
+	font-size: 1.25rem;
+	color: #666;
+	margin-bottom: 0;
+}
+
+.gradient-text {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+.home-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 30px;
+	margin-bottom: 60px;
+}
+
+.home-card {
+	background: white;
+	border: 2px solid #e5e7eb;
+	border-radius: 16px;
+	padding: 40px 30px;
+	text-align: center;
+	transition: all 0.3s ease;
+	text-decoration: none;
+	color: inherit;
+	cursor: pointer;
+}
+
+.home-card:hover {
+	transform: translateY(-8px);
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+	border-color: #667eea;
+}
+
+.home-card-icon {
+	font-size: 3rem;
+	margin-bottom: 20px;
+}
+
+.home-card-title {
+	font-size: 1.75rem;
+	font-weight: 700;
+	margin-bottom: 15px;
+	color: #1a1a1a;
+}
+
+.home-card-description {
+	font-size: 1rem;
+	color: #666;
+	line-height: 1.6;
+	margin-bottom: 20px;
+}
+
+.home-card-cta {
+	font-size: 1rem;
+	font-weight: 600;
+	color: #667eea;
+	transition: color 0.3s ease;
+}
+
+.home-card:hover .home-card-cta {
+	color: #764ba2;
+}
+
+.home-features {
+	display: flex;
+	justify-content: center;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.feature-badge {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 10px 20px;
+	border-radius: 20px;
+	font-size: 0.9rem;
+	font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+	.home-card {
+		background: #1a1a1a;
+		border-color: #333;
+	}
+
+	.home-card-title {
+		color: #fff;
+	}
+
+	.home-subtitle {
+		color: #999;
+	}
+
+	.home-card-description {
+		color: #999;
+	}
+}
+
+@media (max-width: 768px) {
+	.home-title {
+		font-size: 2rem;
+	}
+
+	.home-subtitle {
+		font-size: 1rem;
+	}
+
+	.home-cards {
+		grid-template-columns: 1fr;
+	}
+
+	.home-logo {
+		height: 60px;
+	}
+}
+
