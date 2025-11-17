@@ -2,6 +2,7 @@ import { type Address, createPublicClient, getAddress, http } from "viem";
 import { mainnet, sepolia } from "viem/chains";
 import { normalize } from "viem/ens";
 import { ZERODEV_CONFIG } from "../config/contracts";
+import { type Platform, PLATFORMS } from "../types/platform";
 
 const sepoliaClient = createPublicClient({
 	chain: sepolia,
@@ -13,12 +14,20 @@ const mainnetClient = createPublicClient({
 	transport: http(),
 });
 
-export function handleToEnsName(handleRaw: string): string {
-	const handle = (handleRaw || "")
-		.trim()
-		.replace(/^@/, "")
-		.replace(/_/g, "-"); // Replace all underscores with hyphens
-	return handle ? `${handle}.x.zkemail.eth` : "";
+export function handleToEnsName(handleRaw: string, platform: Platform = "x"): string {
+	const platformConfig = PLATFORMS[platform];
+	let handle = (handleRaw || "").trim();
+	
+	// Platform-specific handle normalization
+	if (platform === "x") {
+		handle = handle.replace(/^@/, "").replace(/_/g, "-");
+	} else if (platform === "discord") {
+		// Discord usernames can have various formats
+		// Remove @ if present, normalize underscores and special chars
+		handle = handle.replace(/^@/, "").replace(/_/g, "-").replace(/#/g, "-");
+	}
+	
+	return handle ? `${handle}${platformConfig.ensSuffix}` : "";
 }
 
 export async function resolveEnsToPredictedAddress(name: string): Promise<Address | null> {

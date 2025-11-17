@@ -8,6 +8,8 @@ import {
 } from "../../utils/ens";
 import { useTwitterProof } from "../twitter/useTwitterProof";
 import { useDebounce } from "../../hooks/useDebounce";
+import { type Platform, PLATFORMS } from "../../types/platform";
+import PlatformSelector from "../../components/PlatformSelector";
 
 function getStepLabel(step: string): string {
   const labels: Record<string, string> = {
@@ -19,16 +21,20 @@ function getStepLabel(step: string): string {
     "init-noir": "Initializing zero-knowledge engine...",
     "generate-proof": "Generating proof (this may take a minute)...",
     "offchain-verification": "Verifying proof...",
+    "sending-to-server": "Sending email to server...",
+    "remote-proof-generation": "Generating proof on server...",
+    "processing-response": "Processing server response...",
   };
   return labels[step] || "Processing...";
 }
 
 export default function Claim() {
+  const [platform, setPlatform] = useState<Platform>("x");
   const [handle, setHandle] = useState("");
   const debouncedHandle = useDebounce(handle, 500);
   const ensName = useMemo(
-    () => handleToEnsName(debouncedHandle),
-    [debouncedHandle]
+    () => handleToEnsName(debouncedHandle, platform),
+    [debouncedHandle, platform]
   );
   const [resolvedAddress, setResolvedAddress] = useState<Address | null>(null);
   const [isResolving, setIsResolving] = useState(false);
@@ -55,6 +61,8 @@ export default function Claim() {
     submit,
     reset,
   } = useTwitterProof();
+
+  const platformConfig = PLATFORMS[platform];
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +115,13 @@ export default function Claim() {
   const handleGenerate = () => {
     if (!file || !resolvedWithdrawAddress) return;
     const cmd = `Withdraw all eth to ${resolvedWithdrawAddress}`;
-    run(file, cmd);
+    run(
+      file,
+      cmd,
+      platformConfig.blueprint,
+      platformConfig.provingMode,
+      "remoteProvingUrl" in platformConfig ? platformConfig.remoteProvingUrl : undefined
+    );
   };
 
   const handleReset = () => {
@@ -186,7 +200,7 @@ export default function Claim() {
               lineHeight: 1.6,
             }}
           >
-            Verify your X account ownership and withdraw your funds securely
+            Verify your social account ownership and withdraw your funds securely
           </p>
 
           {/* Feature badges */}
@@ -258,17 +272,22 @@ export default function Claim() {
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
           }}
         >
+          <PlatformSelector
+            selectedPlatform={platform}
+            onPlatformChange={setPlatform}
+          />
+          
           <div>
             <label
               htmlFor="handle"
               style={{ fontWeight: 500, fontSize: "15px" }}
             >
-              Your X handle
+              Your {PLATFORMS[platform].name} handle
             </label>
             <input
               id="handle"
               type="text"
-              placeholder="e.g., @your_handle"
+              placeholder={`e.g., ${PLATFORMS[platform].placeholder}`}
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
               style={{
@@ -368,7 +387,7 @@ export default function Claim() {
             >
               <div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
               <div className="help-text">
-                This X handle hasn't set up their account yet
+                This {PLATFORMS[platform].name} handle hasn't set up their account yet
               </div>
             </div>
           )}
@@ -658,10 +677,10 @@ export default function Claim() {
                   fontSize: "15px",
                 }}
               >
-                Verify your X account
+                Verify your {PLATFORMS[platform].name} account
               </label>
               <div className="help-text" style={{ marginBottom: "12px" }}>
-                Upload your X password reset email to prove ownership
+                Upload your {PLATFORMS[platform].emailType} to prove ownership
               </div>
               <div
                 onClick={() => !isLoading && inputRef.current?.click()}

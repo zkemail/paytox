@@ -11,7 +11,7 @@ export default function Home() {
 				className="home-logo"
 			/>
 				<h1 className="home-title">
-					Send ETH to any <span className="gradient-text">X handle</span>
+					Send ETH to any <span className="gradient-text">social handle</span>
 				</h1>
 				<p className="home-subtitle">
 					Powered by ZK Email proofs and ENS names
@@ -23,7 +23,7 @@ export default function Home() {
 					<div className="home-card-icon">💸</div>
 					<h2 className="home-card-title">Send a Tip</h2>
 					<p className="home-card-description">
-						Send ETH to any X (Twitter) handle. They'll be able to claim it with just an email.
+						Send ETH to any social handle (X, Discord, and more). They'll be able to claim it with just an email.
 					</p>
 					<div className="home-card-cta">
 						Get started →
@@ -34,7 +34,7 @@ export default function Home() {
 					<div className="home-card-icon">🎁</div>
 					<h2 className="home-card-title">Claim Your Tips</h2>
 					<p className="home-card-description">
-						Check your balance and withdraw tips sent to your X handle.
+						Check your balance and withdraw tips sent to your social handle.
 					</p>
 					<div className="home-card-cta">
 						Check balance →
