@@ -7,7 +7,7 @@ export const CONTRACTS = {
       entrypoint: "0x593403CF4fC2761360cCB214Fc0999fcd7Df3aC4" as `0x${string}`,
     },
     discord: {
-      entrypoint: "0x593403CF4fC2761360cCB214Fc0999fcd7Df3aC4" as `0x${string}`,
+      entrypoint: "0xa8DfAe1030873d680440408aE3afbf9479a8a1bf" as `0x${string}`,
     },
     // Placeholders for future implementation
     github: {
