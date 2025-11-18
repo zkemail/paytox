@@ -3,6 +3,7 @@ import { Buffer as BufferPolyfill } from "buffer";
 import { submitProofWithZeroDev } from "../../utils/zerodev";
 import type { ProvingMode } from "../../types/platform";
 import type { Address } from "viem";
+import { concat, hexlify } from "ethers";
 
 // Browser polyfills for libs expecting Node-like globals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,7 +49,7 @@ function transformRemoteProof(response: RemoteProofResponse): {
   };
 } {
   // Concatenate proof array into single hex string
-  const proofData = response.proof.join("").replace(/^0x/, "");
+  const proofData = hexlify(concat(response.proof));
 
   return {
     props: {
@@ -251,7 +252,9 @@ export function useTwitterProof(options: UseProofOptions = {}) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const proofAny: any = result.proof as any;
-      const proofData = `0x${proofAny.props.proofData!}` as `0x${string}`;
+      const proofData = proofAny.props.proofData!.startsWith("0x")
+        ? (proofAny.props.proofData! as `0x${string}`)
+        : (("0x" + proofAny.props.proofData!) as `0x${string}`);
       const publicOutputs = proofAny.props.publicOutputs! as `0x${string}`[];
 
       console.log("📦 Extracted proof data:", proofData);
