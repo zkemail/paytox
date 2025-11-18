@@ -10,6 +10,7 @@ import { useTwitterProof } from "../twitter/useTwitterProof";
 import { useDebounce } from "../../hooks/useDebounce";
 import { type Platform, PLATFORMS } from "../../types/platform";
 import PlatformSelector from "../../components/PlatformSelector";
+import { getContractForPlatform } from "../../config/contracts";
 
 function getStepLabel(step: string): string {
   const labels: Record<string, string> = {
@@ -114,13 +115,20 @@ export default function Claim() {
 
   const handleGenerate = () => {
     if (!file || !resolvedWithdrawAddress) return;
+
+    // Get platform-specific contract address
+    const contractConfig = getContractForPlatform(platform);
     const cmd = `Withdraw all eth to ${resolvedWithdrawAddress}`;
+
     run(
       file,
       cmd,
       platformConfig.blueprint,
       platformConfig.provingMode,
-      "remoteProvingUrl" in platformConfig ? platformConfig.remoteProvingUrl : undefined
+      "remoteProvingUrl" in platformConfig
+        ? platformConfig.remoteProvingUrl
+        : undefined,
+      contractConfig.entrypoint
     );
   };
 
@@ -200,7 +208,8 @@ export default function Claim() {
               lineHeight: 1.6,
             }}
           >
-            Verify your social account ownership and withdraw your funds securely
+            Verify your social account ownership and withdraw your funds
+            securely
           </p>
 
           {/* Feature badges */}
@@ -276,7 +285,7 @@ export default function Claim() {
             selectedPlatform={platform}
             onPlatformChange={setPlatform}
           />
-          
+
           <div>
             <label
               htmlFor="handle"
@@ -387,7 +396,8 @@ export default function Claim() {
             >
               <div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
               <div className="help-text">
-                This {PLATFORMS[platform].name} handle hasn't set up their account yet
+                This {PLATFORMS[platform].name} handle hasn't set up their
+                account yet
               </div>
             </div>
           )}

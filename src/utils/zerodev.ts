@@ -5,10 +5,15 @@ import {
 } from "@zerodev/sdk";
 import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
-import { http, createPublicClient, encodeFunctionData } from "viem";
+import {
+  http,
+  createPublicClient,
+  encodeFunctionData,
+  type Address,
+} from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
-import { ZERODEV_CONFIG, CONTRACTS } from "../config/contracts";
+import { ZERODEV_CONFIG } from "../config/contracts";
 import { entrypointAbi } from "../config/abi";
 
 const chain = sepolia;
@@ -17,9 +22,11 @@ const kernelVersion = KERNEL_V3_1;
 
 export async function submitProofWithZeroDev(
   proofData: `0x${string}`,
-  publicOutputs: `0x${string}`[]
+  publicOutputs: `0x${string}`[],
+  contractAddress: Address
 ) {
   console.log("🚀 Starting ZeroDev submission process...");
+  console.log("📍 Contract Address:", contractAddress);
   console.log("📊 Proof Data:", proofData);
   console.log("📊 Public Outputs:", publicOutputs);
 
@@ -42,7 +49,7 @@ export async function submitProofWithZeroDev(
     "\n📝 Step 3: Encoding proof data using contract's encode function..."
   );
   const encodedData = await publicClient.readContract({
-    address: CONTRACTS.sepolia.entrypoint,
+    address: contractAddress,
     abi: entrypointAbi,
     functionName: "encode",
     args: [proofData, publicOutputs],
@@ -107,7 +114,7 @@ export async function submitProofWithZeroDev(
   const userOpHash = await kernelClient.sendUserOperation({
     callData: await kernelClient.account.encodeCalls([
       {
-        to: CONTRACTS.sepolia.entrypoint,
+        to: contractAddress,
         value: BigInt(0),
         data: entrypointCallData,
       },

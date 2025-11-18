@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Buffer as BufferPolyfill } from "buffer";
 import { submitProofWithZeroDev } from "../../utils/zerodev";
 import type { ProvingMode } from "../../types/platform";
+import type { Address } from "viem";
 
 // Browser polyfills for libs expecting Node-like globals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +34,30 @@ interface UseProofOptions {
   blueprint?: string;
 }
 
+// Remote proving response format
+interface RemoteProofResponse {
+  proof: string[];
+  publicInputs: string[];
+}
+
+// Transform remote proof to local format
+function transformRemoteProof(response: RemoteProofResponse): {
+  props: {
+    proofData: string;
+    publicOutputs: string[];
+  };
+} {
+  // Concatenate proof array into single hex string
+  const proofData = response.proof.join("").replace(/^0x/, "");
+
+  return {
+    props: {
+      proofData,
+      publicOutputs: response.publicInputs,
+    },
+  };
+}
+
 export function useTwitterProof(options: UseProofOptions = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +70,7 @@ export function useTwitterProof(options: UseProofOptions = {}) {
   } | null>(null);
   const [step, setStep] = useState<string>("");
   const [progress, setProgress] = useState<number>(0);
+  const [contractAddress, setContractAddress] = useState<Address | null>(null);
 
   const run = useCallback(
     async (
@@ -52,12 +78,19 @@ export function useTwitterProof(options: UseProofOptions = {}) {
       command: string,
       blueprintId?: string,
       provingMode: ProvingMode = "local",
-      remoteProvingUrl?: string
+      remoteProvingUrl?: string,
+      contractAddr?: Address
     ) => {
       setIsLoading(true);
       setError(null);
       setResult(null);
       setProgress(0);
+
+      // Store contract address for later submission
+      if (contractAddr) {
+        setContractAddress(contractAddr);
+      }
+
       try {
         if (!emlFile) throw new Error("Please choose a .eml file");
         const fileOk = emlFile.name?.toLowerCase().endsWith(".eml");
@@ -112,9 +145,31 @@ export function useTwitterProof(options: UseProofOptions = {}) {
           setProgress(80);
 
           const result = await response.json();
+          console.log("📥 Received remote proof response:", result);
+
+          // Validate response format
+          if (
+            !result?.proof ||
+            !Array.isArray(result.proof) ||
+            !result?.publicInputs ||
+            !Array.isArray(result.publicInputs)
+          ) {
+            throw new Error(
+              "Invalid response format from remote prover. Expected { proof: string[], publicInputs: string[] }"
+            );
+          }
+
+          // Transform remote proof to expected format
+          const transformedProof = transformRemoteProof(
+            result as RemoteProofResponse
+          );
+          console.log("✅ Transformed proof:", transformedProof);
 
           setProgress(100);
-          setResult({ proof: result, verification: { verified: true } });
+          setResult({
+            proof: transformedProof,
+            verification: { verified: true },
+          });
           console.log("✅ Remote proof generated successfully");
         } else {
           // Local proving flow (existing X flow)
@@ -179,12 +234,20 @@ export function useTwitterProof(options: UseProofOptions = {}) {
       return;
     }
 
+    if (!contractAddress) {
+      setError(
+        "No contract address specified. Please generate the proof again."
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     setStep("submit-onchain");
 
     try {
       console.log("🔄 Starting onchain submission...");
+      console.log("📍 Using contract address:", contractAddress);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const proofAny: any = result.proof as any;
@@ -196,7 +259,8 @@ export function useTwitterProof(options: UseProofOptions = {}) {
 
       const submitResult = await submitProofWithZeroDev(
         proofData,
-        publicOutputs
+        publicOutputs,
+        contractAddress
       );
 
       setSubmitResult({
@@ -215,7 +279,7 @@ export function useTwitterProof(options: UseProofOptions = {}) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [result]);
+  }, [result, contractAddress]);
 
   const json = useMemo(
     () => (result ? JSON.stringify(result, null, 2) : ""),
@@ -230,6 +294,7 @@ export function useTwitterProof(options: UseProofOptions = {}) {
     setSubmitResult(null);
     setStep("");
     setProgress(0);
+    setContractAddress(null);
   }, []);
 
   return {
