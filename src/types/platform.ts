@@ -24,10 +24,10 @@ export const PLATFORMS = {
     placeholder: "username#1234",
     description: "Discord username",
     ensSuffix: ".discord.zkemail.eth",
-    blueprint: "benceharomi/discord_handle@v1",
+    blueprint: "zkemail/discord@v1",
     emailType: "Discord verification email",
     provingMode: "remote" as const,
-    remoteProvingUrl: "https://dev-conductor.zk.email/api/prove", // Update with actual endpoint
+    remoteProvingUrl: "https://noir-prover.zk.email/prove",
     handleRegistrar: "0x9f6b4122c714dFCD32c24d7515dDFA7fec97746D" as const,
     comingSoon: false,
   },
