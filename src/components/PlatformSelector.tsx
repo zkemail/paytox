@@ -12,7 +12,7 @@ export default function PlatformSelector({
   disabled = false,
 }: PlatformSelectorProps) {
   return (
-    <div>
+    <div style={{ width: "100%", overflow: "hidden" }}>
       <label
         style={{
           fontWeight: 500,
@@ -24,10 +24,15 @@ export default function PlatformSelector({
         Select Platform
       </label>
       <div
+        className="horizontal-scroll"
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          display: "flex",
           gap: "12px",
+          overflowX: "auto",
+          overflowY: "hidden",
+          paddingBottom: "8px",
+          WebkitOverflowScrolling: "touch",
+          width: "100%",
         }}
       >
         {(Object.keys(PLATFORMS) as Platform[]).map((platformKey) => {
@@ -56,6 +61,9 @@ export default function PlatformSelector({
                 textAlign: "left",
                 opacity: isComingSoon ? 0.6 : 1,
                 position: "relative",
+                minWidth: "180px",
+                flexShrink: 0,
+                flex: "0 0 auto",
               }}
             >
               <div

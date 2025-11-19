@@ -387,11 +387,6 @@ export default function Claim() {
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
           }}
         >
-          <PlatformSelector
-            selectedPlatform={platform}
-            onPlatformChange={setPlatform}
-          />
-
           <div>
             <label
               htmlFor="handle"
@@ -417,6 +412,11 @@ export default function Claim() {
               }}
             />
           </div>
+
+          <PlatformSelector
+            selectedPlatform={platform}
+            onPlatformChange={setPlatform}
+          />
 
           {ensName && isResolving && (
             <div
@@ -949,7 +949,9 @@ export default function Claim() {
                     {file ? file.name : "Click to upload email"}
                   </div>
                   <div className="help-text">
-                    {file ? "Email ready" : "Choose your .eml file"}
+                    {file
+                      ? "Email ready"
+                      : `Choose your ${PLATFORMS[platform].emailType} (.eml file)`}
                   </div>
                   <input
                     ref={inputRef}
