@@ -796,9 +796,7 @@ export default function Claim() {
                 Verify your {PLATFORMS[platform].name} account
               </label>
               <div className="help-text" style={{ marginBottom: "12px" }}>
-                {useGoogleAuth
-                  ? `Sign in with Google to access your ${PLATFORMS[platform].emailType}`
-                  : `Upload your ${PLATFORMS[platform].emailType} to prove ownership`}
+                We use emails from {PLATFORMS[platform].name} that contain your username to verify that you own it, and ZK proofs to prove it without leaking your inbox. No email data is retained on our servers.
               </div>
 
               {/* Toggle between Google Sign-In and File Upload */}
@@ -859,7 +857,7 @@ export default function Claim() {
                     <GoogleAuthBackend
                       onSuccess={handleGoogleSuccess}
                       onError={handleGoogleError}
-                      disabled={isLoading}
+                      disabled={isLoading || !resolvedWithdrawAddress}
                       platform={platform}
                       handle={handle}
                       withdrawAddress={resolvedWithdrawAddress || undefined}
@@ -1066,14 +1064,17 @@ export default function Claim() {
 
             <div style={{ display: "flex", gap: 10, marginTop: "8px" }}>
               {!result ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={handleGenerate}
-                  disabled={!canGenerate}
-                  style={{ flex: 1 }}
-                >
-                  {isLoading ? "Processing..." : "Start Withdrawal"}
-                </button>
+                // Only show "Start Withdrawal" for raw .eml upload, not for Google Auth
+                !useGoogleAuth && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleGenerate}
+                    disabled={!canGenerate}
+                    style={{ flex: 1 }}
+                  >
+                    {isLoading ? "Processing..." : "Start Withdrawal"}
+                  </button>
+                )
               ) : !submitResult ? (
                 <>
                   <button
