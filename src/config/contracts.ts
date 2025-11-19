@@ -1,10 +1,28 @@
-// Contract addresses for different networks
+import type { Platform } from "../types/platform";
+
+// Contract addresses for different networks and platforms
 export const CONTRACTS = {
   sepolia: {
-    // Replace with your actual contract address
-    entrypoint: "0x593403CF4fC2761360cCB214Fc0999fcd7Df3aC4" as `0x${string}`,
+    x: {
+      entrypoint: "0x593403CF4fC2761360cCB214Fc0999fcd7Df3aC4" as `0x${string}`,
+    },
+    discord: {
+      entrypoint: "0xB466C076D131b1E064448D536b3981b7E0c1976e" as `0x${string}`,
+    },
+    // Placeholders for future implementation
+    github: {
+      entrypoint: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+    },
+    reddit: {
+      entrypoint: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+    },
   },
 } as const;
+
+// Helper function to get contract for a platform
+export function getContractForPlatform(platform: Platform) {
+  return CONTRACTS.sepolia[platform];
+}
 
 // ZeroDev configuration
 export const ZERODEV_CONFIG = {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type Address, formatEther } from "viem";
+import { useSearchParams } from "react-router-dom";
 import {
   handleToEnsName,
   resolveEnsToPredictedAddress,
@@ -8,6 +9,10 @@ import {
 } from "../../utils/ens";
 import { useTwitterProof } from "../twitter/useTwitterProof";
 import { useDebounce } from "../../hooks/useDebounce";
+import { type Platform, PLATFORMS } from "../../types/platform";
+import PlatformSelector from "../../components/PlatformSelector";
+import { getContractForPlatform } from "../../config/contracts";
+import GoogleAuthBackend from "../../components/GoogleAuthBackend";
 
 function getStepLabel(step: string): string {
   const labels: Record<string, string> = {
@@ -19,16 +24,21 @@ function getStepLabel(step: string): string {
     "init-noir": "Initializing zero-knowledge engine...",
     "generate-proof": "Generating proof (this may take a minute)...",
     "offchain-verification": "Verifying proof...",
+    "sending-to-server": "Sending email to server...",
+    "remote-proof-generation": "Generating proof on server...",
+    "processing-response": "Processing server response...",
   };
   return labels[step] || "Processing...";
 }
 
 export default function Claim() {
+  const [searchParams] = useSearchParams();
+  const [platform, setPlatform] = useState<Platform>("x");
   const [handle, setHandle] = useState("");
   const debouncedHandle = useDebounce(handle, 500);
   const ensName = useMemo(
-    () => handleToEnsName(debouncedHandle),
-    [debouncedHandle]
+    () => handleToEnsName(debouncedHandle, platform),
+    [debouncedHandle, platform]
   );
   const [resolvedAddress, setResolvedAddress] = useState<Address | null>(null);
   const [isResolving, setIsResolving] = useState(false);
@@ -43,6 +53,10 @@ export default function Claim() {
   const [file, setFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  // Google Auth state
+  const [useGoogleAuth, setUseGoogleAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const {
     isLoading,
     isSubmitting,
@@ -54,7 +68,107 @@ export default function Claim() {
     run,
     submit,
     reset,
+    setResult,
+    setContractAddress,
   } = useTwitterProof();
+
+  const platformConfig = PLATFORMS[platform];
+
+  // Check for OAuth callback data on mount
+  useEffect(() => {
+    // Backend redirects directly to /claim?proofId=...
+    const proofId = searchParams.get("proofId");
+    const authErrorParam = searchParams.get("error");
+
+    if (proofId) {
+      handleGoogleSuccess(proofId);
+      // Clean up URL after extracting proofId
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+
+    if (authErrorParam) {
+      setAuthError(decodeURIComponent(authErrorParam));
+      // Clean up URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [searchParams]);
+
+  // Handler for successful Google auth - fetch proof from backend
+  const handleGoogleSuccess = async (proofId: string) => {
+    setAuthError(null);
+
+    try {
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "https://noir-prover.zk.email";
+      const response = await fetch(`${backendUrl}/proof/${proofId}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch proof from backend");
+      }
+
+      const proofData = await response.json();
+
+      // Backend returns: { success: true, id: "...", handle: "...", email: { raw: "..." }, proof: [...], publicInputs: [...] }
+      if (proofData.success && proofData.email?.raw) {
+        // Extract and set the handle from the backend response
+        if (proofData.handle) {
+          setHandle(proofData.handle);
+        }
+
+        // Create file for reference (optional, for download/inspection)
+        const blob = new Blob([proofData.email.raw], {
+          type: "message/rfc822",
+        });
+        const emlFile = new File([blob], "google-email.eml", {
+          type: "message/rfc822",
+        });
+        setFile(emlFile);
+
+        // If proof and publicInputs are present, bypass frontend proof generation
+        if (proofData.proof && proofData.publicInputs) {
+          // Import helper function from useTwitterProof
+          const { hexlify, concat } = await import("ethers");
+
+          // Transform backend proof format to the format expected by submit
+          const proofDataHex = hexlify(concat(proofData.proof));
+          const transformedProof = {
+            props: {
+              proofData: proofDataHex,
+              publicOutputs: proofData.publicInputs,
+            },
+          };
+
+          // Simulate the result structure from useTwitterProof
+          const simulatedResult = {
+            proof: transformedProof,
+            verification: { verified: true }, // Backend already verified
+          };
+
+          // Set result directly - user can now proceed to withdrawal
+          setResult(simulatedResult);
+
+          // Set the contract address for the current platform
+          const contract = getContractForPlatform(platform);
+          setContractAddress(contract.entrypoint);
+
+          console.log("✅ Proof received from backend - ready for withdrawal!");
+        }
+      } else {
+        throw new Error("No email data in proof response");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch proof";
+      setAuthError(errorMessage);
+      console.error("Error fetching proof:", error);
+    }
+  };
+
+  const handleGoogleError = (error: string) => {
+    setAuthError(error);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -106,13 +220,27 @@ export default function Claim() {
 
   const handleGenerate = () => {
     if (!file || !resolvedWithdrawAddress) return;
+
+    // Get platform-specific contract address
+    const contractConfig = getContractForPlatform(platform);
     const cmd = `Withdraw all eth to ${resolvedWithdrawAddress}`;
-    run(file, cmd);
+
+    run(
+      file,
+      cmd,
+      platformConfig.blueprint,
+      platformConfig.provingMode,
+      "remoteProvingUrl" in platformConfig
+        ? platformConfig.remoteProvingUrl
+        : undefined,
+      contractConfig.entrypoint
+    );
   };
 
   const handleReset = () => {
     reset();
     setFile(null);
+    setAuthError(null);
   };
 
   return (
@@ -186,7 +314,8 @@ export default function Claim() {
               lineHeight: 1.6,
             }}
           >
-            Verify your X account ownership and withdraw your funds securely
+            Verify your social account ownership and withdraw your funds
+            securely
           </p>
 
           {/* Feature badges */}
@@ -258,17 +387,22 @@ export default function Claim() {
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
           }}
         >
+          <PlatformSelector
+            selectedPlatform={platform}
+            onPlatformChange={setPlatform}
+          />
+
           <div>
             <label
               htmlFor="handle"
               style={{ fontWeight: 500, fontSize: "15px" }}
             >
-              Your X handle
+              Your {PLATFORMS[platform].name} handle
             </label>
             <input
               id="handle"
               type="text"
-              placeholder="e.g., @your_handle"
+              placeholder={`e.g., ${PLATFORMS[platform].placeholder}`}
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
               style={{
@@ -368,7 +502,8 @@ export default function Claim() {
             >
               <div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
               <div className="help-text">
-                This X handle hasn't set up their account yet
+                This {PLATFORMS[platform].name} handle hasn't set up their
+                account yet
               </div>
             </div>
           )}
@@ -658,50 +793,174 @@ export default function Claim() {
                   fontSize: "15px",
                 }}
               >
-                Verify your X account
+                Verify your {PLATFORMS[platform].name} account
               </label>
               <div className="help-text" style={{ marginBottom: "12px" }}>
-                Upload your X password reset email to prove ownership
+                {useGoogleAuth
+                  ? `Sign in with Google to access your ${PLATFORMS[platform].emailType}`
+                  : `Upload your ${PLATFORMS[platform].emailType} to prove ownership`}
               </div>
+
+              {/* Toggle between Google Sign-In and File Upload */}
               <div
-                onClick={() => !isLoading && inputRef.current?.click()}
-                role="button"
-                tabIndex={0}
                 style={{
-                  border: file
-                    ? "2px solid rgba(34, 197, 94, 0.3)"
-                    : "2px dashed var(--border)",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  textAlign: "center",
-                  cursor: isLoading ? "not-allowed" : "pointer",
-                  background: file ? "rgba(34, 197, 94, 0.05)" : "transparent",
-                  transition: "all 0.2s",
+                  display: "flex",
+                  gap: "8px",
+                  marginBottom: "16px",
+                  padding: "4px",
+                  background: "var(--card)",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border)",
                 }}
               >
-                <div
+                <button
+                  onClick={() => setUseGoogleAuth(true)}
                   style={{
-                    fontSize: "32px",
-                    marginBottom: "8px",
+                    flex: 1,
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "none",
+                    background: useGoogleAuth
+                      ? "var(--background)"
+                      : "transparent",
+                    color: "var(--text)",
+                    fontWeight: useGoogleAuth ? 500 : 400,
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    transition: "all 0.2s",
                   }}
                 >
-                  {file ? "✓" : "📧"}
-                </div>
-                <div style={{ marginBottom: "8px", fontWeight: 500 }}>
-                  {file ? file.name : "Click to upload email"}
-                </div>
-                <div className="help-text">
-                  {file ? "Email ready" : "Choose your .eml file"}
-                </div>
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept=".eml"
-                  style={{ display: "none" }}
-                  disabled={isLoading}
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
+                  Sign in with Google
+                </button>
+                <button
+                  onClick={() => setUseGoogleAuth(false)}
+                  style={{
+                    flex: 1,
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    border: "none",
+                    background: !useGoogleAuth
+                      ? "var(--background)"
+                      : "transparent",
+                    color: "var(--text)",
+                    fontWeight: !useGoogleAuth ? 500 : 400,
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  Upload .eml file
+                </button>
               </div>
+
+              {useGoogleAuth ? (
+                <>
+                  {!file ? (
+                    <GoogleAuthBackend
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      disabled={isLoading}
+                      platform={platform}
+                      handle={handle}
+                      withdrawAddress={resolvedWithdrawAddress || undefined}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        padding: "16px",
+                        background: "rgba(34, 197, 94, 0.08)",
+                        border: "2px solid rgba(34, 197, 94, 0.3)",
+                        borderRadius: "12px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: "32px", marginBottom: "8px" }}>
+                        ✓
+                      </div>
+                      <div style={{ marginBottom: "8px", fontWeight: 500 }}>
+                        Email ready
+                      </div>
+                      <div
+                        className="help-text"
+                        style={{ marginBottom: "12px" }}
+                      >
+                        {file.name}
+                      </div>
+                      <button
+                        onClick={() => setFile(null)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid var(--border)",
+                          background: "var(--background)",
+                          color: "var(--text)",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Choose different email
+                      </button>
+                    </div>
+                  )}
+
+                  {authError && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px",
+                        background: "rgba(239, 68, 68, 0.08)",
+                        border: "1px solid rgba(239, 68, 68, 0.2)",
+                        borderRadius: "8px",
+                        fontSize: "13px",
+                      }}
+                    >
+                      ⚠️ {authError}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div
+                  onClick={() => !isLoading && inputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  style={{
+                    border: file
+                      ? "2px solid rgba(34, 197, 94, 0.3)"
+                      : "2px dashed var(--border)",
+                    borderRadius: "12px",
+                    padding: "20px",
+                    textAlign: "center",
+                    cursor: isLoading ? "not-allowed" : "pointer",
+                    background: file
+                      ? "rgba(34, 197, 94, 0.05)"
+                      : "transparent",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "32px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {file ? "✓" : "📧"}
+                  </div>
+                  <div style={{ marginBottom: "8px", fontWeight: 500 }}>
+                    {file ? file.name : "Click to upload email"}
+                  </div>
+                  <div className="help-text">
+                    {file ? "Email ready" : "Choose your .eml file"}
+                  </div>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept=".eml"
+                    style={{ display: "none" }}
+                    disabled={isLoading}
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+              )}
             </div>
 
             {(isLoading || result) && (

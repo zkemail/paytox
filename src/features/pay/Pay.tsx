@@ -4,11 +4,14 @@ import {
 	resolveEnsToPredictedAddress,
 } from "../../utils/ens";
 import { useDebounce } from "../../hooks/useDebounce";
+import { type Platform, PLATFORMS } from "../../types/platform";
+import PlatformSelector from "../../components/PlatformSelector";
 
 export default function Pay() {
+	const [platform, setPlatform] = useState<Platform>("x");
 	const [handle, setHandle] = useState("");
 	const debouncedHandle = useDebounce(handle, 500);
-	const ensName = useMemo(() => handleToEnsName(debouncedHandle), [debouncedHandle]);
+	const ensName = useMemo(() => handleToEnsName(debouncedHandle, platform), [debouncedHandle, platform]);
 	const [resolvedAddress, setResolvedAddress] = useState<`0x${string}` | null>(null);
 	const [isResolving, setIsResolving] = useState(false);
 	const [showDetails, setShowDetails] = useState(false);
@@ -92,7 +95,7 @@ export default function Pay() {
 								backgroundClip: "text",
 							}}
 						>
-							X profile
+							social handle
 						</span>
 					</h1>
 					<p
@@ -105,7 +108,7 @@ export default function Pay() {
 							lineHeight: 1.6,
 						}}
 					>
-						Support creators, pay friends, or send tips — all using just their X handle. No wallet needed.
+						Support creators, pay friends, or send tips — all using just their social handle. No wallet needed.
 					</p>
 
 					{/* Feature badges */}
@@ -178,6 +181,11 @@ export default function Pay() {
 						boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
 					}}
 				>
+					<PlatformSelector
+						selectedPlatform={platform}
+						onPlatformChange={setPlatform}
+					/>
+					
 					<div>
 						<label
 							htmlFor="handle"
@@ -206,7 +214,7 @@ export default function Pay() {
 							<input
 								id="handle"
 								type="text"
-								placeholder="Search X handle (e.g., @vitalik)"
+								placeholder={`Search ${PLATFORMS[platform].description} (e.g., ${PLATFORMS[platform].placeholder})`}
 								value={handle}
 								onChange={(e) => setHandle(e.target.value)}
 								style={{
@@ -544,7 +552,7 @@ export default function Pay() {
 						>
 							<div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
 							<div className="help-text">
-								This X handle hasn't set up their account yet
+								This {PLATFORMS[platform].name} handle hasn't set up their account yet
 							</div>
 						</div>
 					)}

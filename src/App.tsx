@@ -3,6 +3,7 @@ import { Link, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./features/home/Home";
 import Pay from "./features/pay/Pay";
 import Claim from "./features/claim/Claim";
+import OAuthCallback from "./features/auth/OAuthCallback";
 
 function App() {
   const location = useLocation();
@@ -28,7 +29,7 @@ function App() {
               className="nav-cta"
               aria-current={location.pathname === "/tip" ? "page" : undefined}
             >
-              Tip X Handle
+              Send Tips
             </Link>
             <Link
               to="/claim"
@@ -44,6 +45,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/tip" element={<Pay />} />
         <Route path="/claim" element={<Claim />} />
+        <Route path="/auth/callback" element={<OAuthCallback />} />
       </Routes>
     </div>
   );
