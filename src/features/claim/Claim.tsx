@@ -56,6 +56,7 @@ export default function Claim() {
   // Google Auth state
   const [useGoogleAuth, setUseGoogleAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
 
   const {
     isLoading,
@@ -81,6 +82,7 @@ export default function Claim() {
     const authErrorParam = searchParams.get("error");
 
     if (proofId) {
+      setIsAutoSubmitting(true);
       handleGoogleSuccess(proofId);
       // Clean up URL after extracting proofId
       const newUrl = window.location.pathname;
@@ -94,6 +96,14 @@ export default function Claim() {
       window.history.replaceState({}, "", newUrl);
     }
   }, [searchParams]);
+
+  // Auto-submit when result is ready from OAuth flow
+  useEffect(() => {
+    if (isAutoSubmitting && result && !isSubmitting && !submitResult) {
+      console.log("🚀 Auto-submitting withdrawal...");
+      submit();
+    }
+  }, [isAutoSubmitting, result, isSubmitting, submitResult, submit]);
 
   // Handler for successful Google auth - fetch proof from backend
   const handleGoogleSuccess = async (proofId: string) => {
@@ -241,6 +251,7 @@ export default function Claim() {
     reset();
     setFile(null);
     setAuthError(null);
+    setIsAutoSubmitting(false);
   };
 
   return (
@@ -376,141 +387,283 @@ export default function Claim() {
           </div>
         </header>
 
-        <div
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-            borderRadius: "16px",
-            padding: "24px",
-            display: "grid",
-            gap: "18px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <div>
-            <label
-              htmlFor="handle"
-              style={{ fontWeight: 500, fontSize: "15px" }}
-            >
-              Your {PLATFORMS[platform].name} handle
-            </label>
-            <input
-              id="handle"
-              type="text"
-              placeholder={`e.g., ${PLATFORMS[platform].placeholder}`}
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px 14px",
-                borderRadius: "10px",
-                border: "1px solid var(--border)",
-                background: "var(--background)",
-                color: "var(--text)",
-                fontSize: "15px",
-                marginTop: "8px",
-              }}
-            />
-          </div>
-
-          <PlatformSelector
-            selectedPlatform={platform}
-            onPlatformChange={setPlatform}
-          />
-
-          {ensName && isResolving && (
-            <div
-              style={{
-                padding: "16px",
-                textAlign: "center",
-                color: "var(--muted)",
-              }}
-            >
-              Checking your balance...
+        {/* Only show handle/balance section if not auto-submitting from OAuth */}
+        {!isAutoSubmitting && (
+          <div
+            style={{
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: "16px",
+              padding: "24px",
+              display: "grid",
+              gap: "18px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            <div>
+              <label
+                htmlFor="handle"
+                style={{ fontWeight: 500, fontSize: "15px" }}
+              >
+                Your {PLATFORMS[platform].name} handle
+              </label>
+              <input
+                id="handle"
+                type="text"
+                placeholder={`e.g., ${PLATFORMS[platform].placeholder}`}
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  border: "1px solid var(--border)",
+                  background: "var(--background)",
+                  color: "var(--text)",
+                  fontSize: "15px",
+                  marginTop: "8px",
+                }}
+              />
             </div>
-          )}
 
-          {ensName && resolvedAddress && balance != null && (
-            <div
-              style={{
-                padding: "18px",
-                background: "rgba(34, 197, 94, 0.08)",
-                border: "1px solid rgba(34, 197, 94, 0.2)",
-                borderRadius: "12px",
-                textAlign: "center",
-              }}
-            >
+            <PlatformSelector
+              selectedPlatform={platform}
+              onPlatformChange={setPlatform}
+            />
+
+            {ensName && isResolving && (
               <div
                 style={{
-                  fontSize: "28px",
-                  marginBottom: "8px",
-                  fontWeight: 600,
+                  padding: "16px",
+                  textAlign: "center",
+                  color: "var(--muted)",
                 }}
               >
-                {Number(formatEther(balance)).toFixed(4)} ETH
+                Checking your balance...
               </div>
-              <div className="help-text">Available to withdraw</div>
+            )}
 
-              <button
-                className="link-cta"
-                onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-                style={{ justifyContent: "center", marginTop: "12px" }}
+            {ensName && resolvedAddress && balance != null && (
+              <div
+                style={{
+                  padding: "18px",
+                  background: "rgba(34, 197, 94, 0.08)",
+                  border: "1px solid rgba(34, 197, 94, 0.2)",
+                  borderRadius: "12px",
+                  textAlign: "center",
+                }}
               >
-                {showTechnicalDetails ? "Hide" : "Show"} wallet address
-              </button>
-
-              {showTechnicalDetails && resolvedAddress && (
                 <div
                   style={{
-                    marginTop: "12px",
-                    padding: "12px",
-                    background: "var(--card)",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    textAlign: "left",
+                    fontSize: "28px",
+                    marginBottom: "8px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {Number(formatEther(balance)).toFixed(4)} ETH
+                </div>
+                <div className="help-text">Available to withdraw</div>
+
+                <button
+                  className="link-cta"
+                  onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+                  style={{ justifyContent: "center", marginTop: "12px" }}
+                >
+                  {showTechnicalDetails ? "Hide" : "Show"} wallet address
+                </button>
+
+                {showTechnicalDetails && resolvedAddress && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      padding: "12px",
+                      background: "var(--card)",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <div
+                      className="help-text"
+                      style={{ marginBottom: 4, fontSize: "11px" }}
+                    >
+                      Wallet Address
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "ui-monospace, monospace",
+                        wordBreak: "break-all",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {resolvedAddress}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {ensName && !isResolving && !resolvedAddress && (
+              <div
+                style={{
+                  padding: "16px",
+                  background: "rgba(234, 179, 8, 0.08)",
+                  border: "1px solid rgba(234, 179, 8, 0.2)",
+                  borderRadius: "12px",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
+                <div className="help-text">
+                  This {PLATFORMS[platform].name} handle hasn't set up their
+                  account yet
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Show withdrawal process when auto-submitting from OAuth */}
+        {isAutoSubmitting && (
+          <div
+            style={{
+              background: "var(--card)",
+              border: "1px solid var(--border)",
+              borderRadius: "16px",
+              padding: "24px",
+              display: "grid",
+              gap: "18px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+              animation: "slideIn 0.3s ease-out",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>
+              {submitResult ? "Withdrawal Complete" : isSubmitting ? "Submitting Withdrawal" : result ? "Preparing Transaction" : "Processing Authentication"}
+            </h3>
+
+            {/* Progress indicator */}
+            {(isLoading || result || isSubmitting) && !submitResult && (
+              <div
+                style={{
+                  padding: "16px",
+                  background: "rgba(96, 165, 250, 0.08)",
+                  border: "1px solid rgba(96, 165, 250, 0.2)",
+                  borderRadius: "10px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <span className="help-text">
+                    {isSubmitting 
+                      ? "Confirming transaction on blockchain..." 
+                      : isLoading 
+                        ? getStepLabel(step) 
+                        : result 
+                          ? "✓ Proof ready - initiating withdrawal" 
+                          : "Processing..."}
+                  </span>
+                  {isLoading && progress > 0 && (
+                    <span className="help-text" style={{ fontWeight: 500 }}>
+                      {progress}%
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "8px",
+                    background: "rgba(148, 163, 184, 0.2)",
+                    borderRadius: "999px",
+                    overflow: "hidden",
                   }}
                 >
                   <div
-                    className="help-text"
-                    style={{ marginBottom: 4, fontSize: "11px" }}
-                  >
-                    Wallet Address
-                  </div>
-                  <div
                     style={{
-                      fontFamily: "ui-monospace, monospace",
-                      wordBreak: "break-all",
-                      fontSize: "12px",
+                      width: isSubmitting ? "95%" : result ? "100%" : `${progress}%`,
+                      height: "100%",
+                      background:
+                        "linear-gradient(90deg, rgb(96, 165, 250), rgb(139, 92, 246))",
+                      borderRadius: "999px",
+                      transition: "width 0.3s ease-out",
                     }}
-                  >
-                    {resolvedAddress}
-                  </div>
+                  />
                 </div>
-              )}
-            </div>
-          )}
-
-          {ensName && !isResolving && !resolvedAddress && (
-            <div
-              style={{
-                padding: "16px",
-                background: "rgba(234, 179, 8, 0.08)",
-                border: "1px solid rgba(234, 179, 8, 0.2)",
-                borderRadius: "12px",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ marginBottom: "6px" }}>⚠️ Handle not found</div>
-              <div className="help-text">
-                This {PLATFORMS[platform].name} handle hasn't set up their
-                account yet
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Only show withdrawal options if we have a resolved address and balance */}
-        {resolvedAddress && balance != null && (
+            {/* Error display */}
+            {error && (
+              <div
+                role="alert"
+                style={{
+                  padding: "14px",
+                  background: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                  borderRadius: "10px",
+                }}
+              >
+                <div style={{ marginBottom: "4px", fontWeight: 500 }}>
+                  ❌ Error
+                </div>
+                <div className="help-text">{String(error)}</div>
+              </div>
+            )}
+
+            {/* Success display */}
+            {submitResult && (
+              <div
+                role="status"
+                style={{
+                  padding: "16px",
+                  background: "rgba(34, 197, 94, 0.08)",
+                  border: "1px solid rgba(34, 197, 94, 0.25)",
+                  borderRadius: "10px",
+                }}
+              >
+                <div style={{ fontSize: "20px", marginBottom: "8px" }}>🎉</div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                  Withdrawal successful!
+                </div>
+                <div className="help-text" style={{ marginBottom: 8 }}>
+                  Your funds have been sent
+                </div>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${submitResult.transactionHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn"
+                  style={{
+                    display: "inline-flex",
+                    marginTop: "8px",
+                    textDecoration: "none",
+                  }}
+                >
+                  View on Etherscan →
+                </a>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {submitResult && (
+              <button
+                className="btn btn-primary"
+                onClick={handleReset}
+                style={{ width: "100%" }}
+              >
+                Withdraw Again
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Only show withdrawal options if we have a resolved address and balance, and not auto-submitting from OAuth */}
+        {resolvedAddress && balance != null && !isAutoSubmitting && (
           <div
             style={{
               background: "var(--card)",
