@@ -13,7 +13,8 @@ export const PLATFORMS = {
     ensSuffix: ".x.zkemail.eth",
     blueprint: "benceharomi/x_handle@v1",
     emailType: "X password reset email",
-    provingMode: "local" as const,
+    provingMode: "remote" as const,
+    remoteProvingUrl: "https://noir-prover.zk.email/prove",
     comingSoon: false,
   },
   discord: {
@@ -24,7 +25,7 @@ export const PLATFORMS = {
     placeholder: "username",
     description: "Discord username (no @ or #)",
     ensSuffix: ".discord.zkemail.eth",
-    blueprint: "zkemail/discord@v1",
+    blueprint: "zkemail/discord_2@v1",
     emailType: "Discord verification email",
     provingMode: "remote" as const,
     remoteProvingUrl: "https://noir-prover.zk.email/prove",

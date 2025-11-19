@@ -312,5 +312,7 @@ export function useTwitterProof(options: UseProofOptions = {}) {
     run,
     submit,
     reset,
+    setResult,
+    setContractAddress,
   } as const;
 }
