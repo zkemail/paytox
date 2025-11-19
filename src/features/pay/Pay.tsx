@@ -174,68 +174,43 @@ export default function Pay() {
 					style={{
 						background: "var(--card)",
 						border: "1px solid var(--border)",
-						borderRadius: "20px",
-						padding: "28px",
+						borderRadius: "16px",
+						padding: "24px",
 						display: "grid",
-						gap: "20px",
-						boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
+						gap: "18px",
+						boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
 					}}
 				>
+					<div>
+						<label
+							htmlFor="handle"
+							style={{ fontWeight: 500, fontSize: "15px" }}
+						>
+							Your {PLATFORMS[platform].name} handle
+						</label>
+						<input
+							id="handle"
+							type="text"
+							placeholder={`e.g., ${PLATFORMS[platform].placeholder}`}
+							value={handle}
+							onChange={(e) => setHandle(e.target.value)}
+							style={{
+								width: "100%",
+								padding: "12px 14px",
+								borderRadius: "10px",
+								border: "1px solid var(--border)",
+								background: "var(--background)",
+								color: "var(--text)",
+								fontSize: "15px",
+								marginTop: "8px",
+							}}
+						/>
+					</div>
+
 					<PlatformSelector
 						selectedPlatform={platform}
 						onPlatformChange={setPlatform}
 					/>
-					
-					<div>
-						<label
-							htmlFor="handle"
-							style={{
-								fontWeight: 600,
-								fontSize: "15px",
-								display: "block",
-								marginBottom: "10px",
-							}}
-						>
-							Who do you want to send to?
-						</label>
-						<div style={{ position: "relative" }}>
-							<div
-								style={{
-									position: "absolute",
-									left: "16px",
-									top: "50%",
-									transform: "translateY(-50%)",
-									fontSize: "20px",
-									pointerEvents: "none",
-								}}
-							>
-								🔍
-							</div>
-							<input
-								id="handle"
-								type="text"
-								placeholder={`Search ${PLATFORMS[platform].description} (e.g., ${PLATFORMS[platform].placeholder})`}
-								value={handle}
-								onChange={(e) => setHandle(e.target.value)}
-								style={{
-									width: "100%",
-									padding: "14px 14px 14px 48px",
-									borderRadius: "12px",
-									border: "2px solid var(--border)",
-									background: "var(--background)",
-									color: "var(--text)",
-									fontSize: "16px",
-									transition: "border-color 0.2s",
-								}}
-								onFocus={(e) => {
-									e.target.style.borderColor = "rgb(96, 165, 250)";
-								}}
-								onBlur={(e) => {
-									e.target.style.borderColor = "var(--border)";
-								}}
-							/>
-						</div>
-					</div>
 
 					{ensName && resolvedAddress && (
 						<div
