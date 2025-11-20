@@ -949,7 +949,17 @@ export default function Claim() {
                 Verify your {PLATFORMS[platform].name} account
               </label>
               <div className="help-text" style={{ marginBottom: "12px" }}>
-                We use emails from {PLATFORMS[platform].name} that contain your username to verify that you own it, and ZK proofs to prove it without leaking your inbox. No email data is retained on our servers.
+                <div style={{ marginBottom: "8px" }}>
+                  We use emails from {PLATFORMS[platform].name} that contain your username to verify that you own it, and ZK proofs to prove it without leaking your inbox. No email data is retained on our servers.
+                </div>
+                <div style={{ marginTop: "12px", fontSize: "13px", lineHeight: "1.6" }}>
+                  <strong>How it works:</strong>
+                  <ol style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+                    <li style={{ marginBottom: "4px" }}>Request a password reset from {PLATFORMS[platform].name}</li>
+                    <li style={{ marginBottom: "4px" }}>Download the .eml file (or just sign in with Google)</li>
+                    <li>Click below to claim your funds</li>
+                  </ol>
+                </div>
               </div>
 
               {/* Toggle between Google Sign-In and File Upload */}
