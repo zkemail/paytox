@@ -538,7 +538,13 @@ export default function Claim() {
             }}
           >
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600 }}>
-              {submitResult ? "Withdrawal Complete" : isSubmitting ? "Submitting Withdrawal" : result ? "Preparing Transaction" : "Processing Authentication"}
+              {submitResult
+                ? "Withdrawal Complete"
+                : isSubmitting
+                ? "Submitting Withdrawal"
+                : result
+                ? "Preparing Transaction"
+                : "Processing Authentication"}
             </h3>
 
             {/* Progress indicator */}
@@ -560,13 +566,13 @@ export default function Claim() {
                   }}
                 >
                   <span className="help-text">
-                    {isSubmitting 
-                      ? "Confirming transaction on blockchain..." 
-                      : isLoading 
-                        ? getStepLabel(step) 
-                        : result 
-                          ? "✓ Proof ready - initiating withdrawal" 
-                          : "Processing..."}
+                    {isSubmitting
+                      ? "Confirming transaction on blockchain..."
+                      : isLoading
+                      ? getStepLabel(step)
+                      : result
+                      ? "✓ Proof ready - initiating withdrawal"
+                      : "Processing..."}
                   </span>
                   {isLoading && progress > 0 && (
                     <span className="help-text" style={{ fontWeight: 500 }}>
@@ -585,7 +591,11 @@ export default function Claim() {
                 >
                   <div
                     style={{
-                      width: isSubmitting ? "95%" : result ? "100%" : `${progress}%`,
+                      width: isSubmitting
+                        ? "95%"
+                        : result
+                        ? "100%"
+                        : `${progress}%`,
                       height: "100%",
                       background:
                         "linear-gradient(90deg, rgb(96, 165, 250), rgb(139, 92, 246))",
@@ -950,13 +960,26 @@ export default function Claim() {
               </label>
               <div className="help-text" style={{ marginBottom: "12px" }}>
                 <div style={{ marginBottom: "8px" }}>
-                  We use emails from {PLATFORMS[platform].name} that contain your username to verify that you own it, and ZK proofs to prove it without leaking your inbox. No email data is retained on our servers.
+                  We use emails from {PLATFORMS[platform].name} that contain
+                  your username to verify that you own it, and ZK proofs to
+                  prove it without leaking your inbox. No email data is retained
+                  on our servers.
                 </div>
-                <div style={{ marginTop: "12px", fontSize: "13px", lineHeight: "1.6" }}>
+                <div
+                  style={{
+                    marginTop: "12px",
+                    fontSize: "13px",
+                    lineHeight: "1.6",
+                  }}
+                >
                   <strong>How it works:</strong>
                   <ol style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
-                    <li style={{ marginBottom: "4px" }}>Request a password reset from {PLATFORMS[platform].name}</li>
-                    <li style={{ marginBottom: "4px" }}>Download the .eml file (or just sign in with Google)</li>
+                    <li style={{ marginBottom: "4px" }}>
+                      Request a password reset from {PLATFORMS[platform].name}
+                    </li>
+                    <li style={{ marginBottom: "4px" }}>
+                      Download the .eml file (or just sign in with Google)
+                    </li>
                     <li>Click below to claim your funds</li>
                   </ol>
                 </div>
