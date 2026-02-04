@@ -9,11 +9,11 @@ export const CONTRACTS = {
     discord: {
       entrypoint: "0xB466C076D131b1E064448D536b3981b7E0c1976e" as `0x${string}`,
     },
+    reddit: {
+      entrypoint: "0x25E3E5F26bC288F861612830522987Ae5DaFE0A0" as `0x${string}`,
+    },
     // Placeholders for future implementation
     github: {
-      entrypoint: "0x0000000000000000000000000000000000000000" as `0x${string}`,
-    },
-    reddit: {
       entrypoint: "0x0000000000000000000000000000000000000000" as `0x${string}`,
     },
   },

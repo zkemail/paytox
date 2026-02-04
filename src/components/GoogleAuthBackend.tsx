@@ -142,10 +142,10 @@ export default function GoogleAuthBackend({
 // Get Gmail search query for each platform
 function getGmailQueryForPlatform(platform: Platform = "x"): string {
   const queries: Record<Platform, string> = {
-    x: 'from:info@x.com subject:"password reset"',
-    discord: 'from:discord.com subject:"Password Reset Request for Discord"',
+    x: 'from:info@x.com subject:"Password reset request"',
+    discord: 'from:discord.com subject:"Password reset request for Discord"',
+    reddit: 'from:reddit.com subject:"Reddit password reset"',
     github: "from:github.com",
-    reddit: "from:reddit.com",
   };
   return queries[platform];
 }
