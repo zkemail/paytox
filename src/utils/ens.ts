@@ -165,7 +165,11 @@ export function validateHandle(
 
     case "reddit": {
       // Reddit usernames: u/username format, 3-20 chars
-      if (!/^[A-Za-z0-9_-]{3,20}$/.test(trimmed)) {
+      // Strip leading "u/" or "U/" prefix if present
+      const redditUsername = trimmed.replace(/^[uU]\//, "");
+      
+      // Check if empty after stripping or if input was only "u/"
+      if (!redditUsername || !/^[A-Za-z0-9_-]{3,20}$/.test(redditUsername)) {
         return {
           valid: false,
           error:
@@ -175,7 +179,7 @@ export function validateHandle(
       return { valid: true };
     }
 
-    case "github":
+    case "github": {
       // GitHub usernames: 1-39 chars, alphanumeric + hyphen, can't start/end with hyphen
       const ghHandle = trimmed.replace(/^@/, "");
       if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/.test(ghHandle)) {
@@ -185,6 +189,7 @@ export function validateHandle(
         };
       }
       return { valid: true };
+    }
 
     default:
       return { valid: false, error: "Unknown platform" };
