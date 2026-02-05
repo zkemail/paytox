@@ -16,25 +16,28 @@ const mainnetClient = createPublicClient({
 
 export function handleToEnsName(
   handleRaw: string,
-  platform: Platform = "x"
+  platform: Platform = "x",
 ): string {
   const platformConfig = PLATFORMS[platform];
   let handle = (handleRaw || "").trim();
 
-  // Platform-specific handle normalization
   if (platform === "x") {
-    handle = handle.replace(/^@/, "").replace(/_/g, "-");
-  } else if (platform === "discord") {
-    // Discord usernames can have various formats
-    // Remove @ if present, normalize underscores and special chars
-    handle = handle.replace(/^@/, "").replace(/_/g, "-").replace(/#/g, "-");
+    // X: remove @ prefix if present
+    handle = handle.replace(/^@/, "");
+  } else if (platform === "reddit") {
+    // Reddit: remove u/ prefix if present
+    handle = handle.replace(/^u\//, "");
   }
+
+  // Replace characters that aren't ENS-compatible
+  // Replace underscores and special chars  with hyphens
+  handle = handle.replace(/_/g, "-").replace(/#/g, "-");
 
   return handle ? `${handle}${platformConfig.ensSuffix}` : "";
 }
 
 export async function resolveEnsToPredictedAddress(
-  name: string
+  name: string,
 ): Promise<Address | null> {
   try {
     if (!name) return null;
@@ -69,7 +72,7 @@ export async function resolveEnsToPredictedAddress(
  * Tries mainnet first, then falls back to Sepolia.
  */
 export async function resolveEnsOrAddress(
-  input: string
+  input: string,
 ): Promise<Address | null> {
   try {
     if (!input) return null;
@@ -122,7 +125,7 @@ export function truncateMiddle(value: string, prefix = 6, suffix = 4) {
  */
 export function validateHandle(
   handle: string,
-  platform: Platform
+  platform: Platform,
 ): {
   valid: boolean;
   error?: string;
@@ -160,6 +163,22 @@ export function validateHandle(
       return { valid: true };
     }
 
+    case "reddit": {
+      // Reddit usernames: u/username format, 3-20 chars
+      // Strip leading "u/" or "U/" prefix if present
+      const redditUsername = trimmed.replace(/^[uU]\//, "");
+      
+      // Check if empty after stripping or if input was only "u/"
+      if (!redditUsername || !/^[A-Za-z0-9_-]{3,20}$/.test(redditUsername)) {
+        return {
+          valid: false,
+          error:
+            "Reddit usernames must be in format: u/username (3-20 characters)",
+        };
+      }
+      return { valid: true };
+    }
+
     case "github": {
       // GitHub usernames: 1-39 chars, alphanumeric + hyphen, can't start/end with hyphen
       const ghHandle = trimmed.replace(/^@/, "");
@@ -171,17 +190,6 @@ export function validateHandle(
       }
       return { valid: true };
     }
-
-    case "reddit":
-      // Reddit usernames: u/username format, 3-20 chars
-      if (!/^u\/[A-Za-z0-9_-]{3,20}$/.test(trimmed)) {
-        return {
-          valid: false,
-          error:
-            "Reddit usernames must be in format: u/username (3-20 characters)",
-        };
-      }
-      return { valid: true };
 
     default:
       return { valid: false, error: "Unknown platform" };
