@@ -120,53 +120,41 @@ export default function Claim() {
 
       const proofData = await response.json();
 
-      // Backend returns: { success: true, id: "...", handle: "...", email: { raw: "..." }, proof: [...], publicInputs: [...] }
-      if (proofData.success && proofData.email?.raw) {
+      // Backend returns: { success: true, id: "...", handle: "...", proof: [...], publicInputs: [...] }
+      if (proofData.success && proofData.proof && proofData.publicInputs) {
         // Extract and set the handle from the backend response
         if (proofData.handle) {
           setHandle(proofData.handle);
         }
 
-        // Create file for reference (optional, for download/inspection)
-        const blob = new Blob([proofData.email.raw], {
-          type: "message/rfc822",
-        });
-        const emlFile = new File([blob], "google-email.eml", {
-          type: "message/rfc822",
-        });
-        setFile(emlFile);
+        // Import helper function from useTwitterProof
+        const { hexlify, concat } = await import("ethers");
 
-        // If proof and publicInputs are present, bypass frontend proof generation
-        if (proofData.proof && proofData.publicInputs) {
-          // Import helper function from useTwitterProof
-          const { hexlify, concat } = await import("ethers");
+        // Transform backend proof format to the format expected by submit
+        const proofDataHex = hexlify(concat(proofData.proof));
+        const transformedProof = {
+          props: {
+            proofData: proofDataHex,
+            publicOutputs: proofData.publicInputs,
+          },
+        };
 
-          // Transform backend proof format to the format expected by submit
-          const proofDataHex = hexlify(concat(proofData.proof));
-          const transformedProof = {
-            props: {
-              proofData: proofDataHex,
-              publicOutputs: proofData.publicInputs,
-            },
-          };
+        // Simulate the result structure from useTwitterProof
+        const simulatedResult = {
+          proof: transformedProof,
+          verification: { verified: true }, // Backend already verified
+        };
 
-          // Simulate the result structure from useTwitterProof
-          const simulatedResult = {
-            proof: transformedProof,
-            verification: { verified: true }, // Backend already verified
-          };
+        // Set result directly - user can now proceed to withdrawal
+        setResult(simulatedResult);
 
-          // Set result directly - user can now proceed to withdrawal
-          setResult(simulatedResult);
+        // Set the contract address for the current platform
+        const contract = getContractForPlatform(platform);
+        setContractAddress(contract.entrypoint);
 
-          // Set the contract address for the current platform
-          const contract = getContractForPlatform(platform);
-          setContractAddress(contract.entrypoint);
-
-          console.log("✅ Proof received from backend - ready for withdrawal!");
-        }
+        console.log("✅ Proof received from backend - ready for withdrawal!");
       } else {
-        throw new Error("No email data in proof response");
+        throw new Error("No proof data in proof response");
       }
     } catch (error) {
       const errorMessage =
