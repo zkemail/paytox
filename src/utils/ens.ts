@@ -4,14 +4,24 @@ import { normalize } from "viem/ens";
 import { ZERODEV_CONFIG } from "../config/contracts";
 import { type Platform, PLATFORMS } from "../types/platform";
 
+const alchemyApiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+
 const sepoliaClient = createPublicClient({
   chain: sepolia,
-  transport: http(ZERODEV_CONFIG.rpcUrl),
+  transport: http(
+    alchemyApiKey
+      ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`
+      : ZERODEV_CONFIG.rpcUrl,
+  ),
 });
 
 const mainnetClient = createPublicClient({
   chain: mainnet,
-  transport: http(),
+  transport: http(
+    alchemyApiKey
+      ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`
+      : undefined,
+  ),
 });
 
 export function handleToEnsName(
@@ -167,7 +177,7 @@ export function validateHandle(
       // Reddit usernames: u/username format, 3-20 chars
       // Strip leading "u/" or "U/" prefix if present
       const redditUsername = trimmed.replace(/^[uU]\//, "");
-      
+
       // Check if empty after stripping or if input was only "u/"
       if (!redditUsername || !/^[A-Za-z0-9_-]{3,20}$/.test(redditUsername)) {
         return {
