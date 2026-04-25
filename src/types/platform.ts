@@ -25,7 +25,7 @@ export const PLATFORMS = {
     placeholder: "username",
     description: "Discord username (no @ or #)",
     ensSuffix: ".discord.zkemail.eth",
-    blueprint: "zkemail/discord@v1",
+    blueprint: "zkemail/discord@v2",
     emailType: "Discord verification email",
     provingMode: "remote" as const,
     remoteProvingUrl: "https://noir-prover.zk.email/prove",
