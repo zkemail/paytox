@@ -176,7 +176,8 @@ export function useTwitterProof(options: UseProofOptions = {}) {
           // Local proving flow (existing X flow)
           setStep("loading-sdk");
           setProgress(10);
-          const { initZkEmailSdk: initZkEmail } = await import("@zk-email/sdk");
+          const sdkModule = await import("@zk-email/sdk");
+          const initZkEmail = sdkModule.initZkEmailSdk;
           const { initNoirWasm } = await import("@zk-email/sdk/initNoirWasm");
 
           setStep("init-sdk");
